@@ -5,23 +5,17 @@ use error::*;
 #[derive(Debug)]
 pub enum Instruction {
     /// Bitwise NOT top of stack
-    BitNot,
+    BitwiseNot,
 
     /// Logical NOT top of stack
-    LogNot,
+    LogicalNot,
 
-    /// Perform an operation on two values
-    Operate { 
-        operator: Operator, 
-        lhs: ValueSource, 
-        rhs: ValueSource, 
-    },
 
     /// Push value to stack
     Push(ValueSource),
 
     /// Insert a value into deque
-    Insert(QueueEnd),
+    Insert(ValueSource, QueueEnd),
 
     /// Destroy the value at top of stack
     Destroy,
@@ -36,7 +30,7 @@ pub enum Instruction {
     SkipIfNotOne,
 
     /// Jump to another sequence
-    Jump { direction: Direction, start: Start }
+    Jump(Direction, Start)
 }
 
 #[derive(Debug)]
@@ -46,6 +40,9 @@ pub enum ValueSource {
 
     /// Pop a value from the stack
     Pop,
+
+    /// Perform a calculation operation on two values
+    Operate(Box<ValueSource>, Operator, Box<ValueSource>),
 
     /// Get a copy of the top of stack
     CloneTop,
@@ -57,7 +54,7 @@ pub enum ValueSource {
     Input,
 
     /// 1 if top of stack == front of deque, 0 otherwise
-    Eq,
+    Equal,
 
     /// 1 if top of stack > front of deque, 0 otherwise
     Greater,
@@ -121,7 +118,11 @@ pub fn interpret(source_code: &str) -> Result<Vec<Sequence>> {
     let mut sequences = Vec::new();
 
     for sequence in source_code.lines().map(parse_line) {
-        sequences.push(sequence?)
+        let sequence = sequence?;
+
+        if !sequence.is_empty() {
+            sequences.push(sequence)
+        }
     }
 
     Ok(sequences)
@@ -133,17 +134,57 @@ fn parse_line(line: &str) -> Result<Sequence> {
 
     for character in line.chars() {
         let instruction = match character {
-            // [0-9]
+            // Math
+            '+' => Push(Operate( Box::new(Pop), Add, Box::new(Pop) )),
+            '-' => Push(Operate( Box::new(Pop), Sub, Box::new(Pop) )),
+            '*' => Push(Operate( Box::new(Pop), Mul, Box::new(Pop) )),
+            '/' => Push(Operate( Box::new(Pop), Div, Box::new(Pop) )),
+            '%' => Push(Operate( Box::new(Pop), Mod, Box::new(Pop) )),
+            '&' => Push(Operate( Box::new(Pop), And, Box::new(Pop) )),
+            '|' => Push(Operate( Box::new(Pop), Or,  Box::new(Pop) )),
+            '^' => Push(Operate( Box::new(Pop), Xor, Box::new(Pop) )),
+
+            '~' => BitwiseNot,
+            '!' => LogicalNot,
+
+            // Logic
+            '=' => Push(Equal),
+            '>' => Push(Greater),
+
+            '@' => SkipIfNotOne,
+
+            // Stack/Deque
             digit if digit.is_digit(10) => {
                 let value = digit.to_digit(10).unwrap() as u8;
                 Push(Digit(value))
             },
 
+            '}' => Insert(Pop, Front),
+            '{' => Push(Remove(Front)),
+            
+            '[' => Insert(Pop, Back),
+            ']' => Push(Remove(Back)),
+
+            '#' => Destroy,
+            '\\' => Push(CloneTop),
+
+            // IO
             '?' => Push(Input),
             ':' => OutputCharacter(Pop),
             ';' => OutputNumber(Pop),
 
-            command => return Err(Error::InvalidCommand(command))
+            // Jumping
+            ',' => Jump(Next, Restart),
+            '.' => Jump(Next, Continue),
+            '\'' => Jump(Previous, Continue),
+            '<' => Jump(Current, Restart),
+
+            // Allow whitespace within code
+            ' ' => continue,
+            '\t' => continue,
+
+            // Ignore a unknown character and anything after it
+            _ => break
         };
 
 
@@ -152,4 +193,3 @@ fn parse_line(line: &str) -> Result<Sequence> {
 
     Ok(sequence)
 }
-
