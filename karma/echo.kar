@@ -1,0 +1,16 @@
+, Reads a line of input and prints it out
+,
+,
+, Scan input 
+,
+55+},   Append newline character to front
+0,      Push 0 to stack, this is our EOF to the input
+?,<     Read a single character to stack
+\=@,['  If character is newline, continue, else insert back and read another character
+#{[[,   Remove the newline and append a newline and EOF to string
+,
+,
+0, <    Push EOF for comparison
+=@,{:'  If we have hit EOF, continue, else print front and repeat.
+]#      Remove trailing EOF
+

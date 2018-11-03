@@ -1,0 +1,22 @@
+, Comptues the fibonacci sequence up to the n:th number
+, 
+,
+, === Reads integer from stdin ===
+,
+0,                          The current sum
+68*?- , +55+*<              Read digit _ until invalid digit _ multiply sum by 10 and add digit
+\10-}>{#!@, }55+>[{]@',     Check if input > -1 _ and < 10
+#,                          Cleanup
+[55+]/,                     Divide sum by 10 to get the number
+,
+,
+, === Init conuter with n=input and i=1 ===
+}1},
+,
+, === Init sum ===
+01,
+,
+, === while n>=i === 
+, \;48*: \[+}]{<    Print the current number and compute the next
+{1+\>[}]@,'         Check if we have done all iterations
+;#{{##              Print the last number and cleanup

@@ -24,6 +24,7 @@ type Stack = Vec<DataType>;
 type Deque = VecDeque<DataType>;
 
 
+#[derive(Debug)]
 struct State {
     pub stack: Stack,
     pub deque: Deque,
@@ -39,7 +40,7 @@ pub fn execute(sequences: &[Sequence]) -> Result<()> {
         stack: Stack::new(),
         deque: Deque::new(),
 
-        current_sequence: 0,
+        current_sequence: 1,
         instruction_offsets: vec![0; sequences.len()]
     };
 
@@ -78,7 +79,6 @@ pub fn execute(sequences: &[Sequence]) -> Result<()> {
                 if top != 1 {
                     state.advance();
                 }
-                state.push(top);
             }
 
             &Jump(ref direction, ref start) => {
@@ -96,8 +96,14 @@ pub fn execute(sequences: &[Sequence]) -> Result<()> {
                 print!("{}", value as u8 as char);
             }
 
+            &Exit => break
         }
     }
+
+    println!("");
+    println!("");
+    println!("Final stack: {:?}", state.stack);
+    println!("Final deque: {:?}", state.deque);
 
     Ok(())
 }
@@ -106,10 +112,14 @@ pub fn execute(sequences: &[Sequence]) -> Result<()> {
 
 impl State {
     pub fn get_instruction<'a>(&self, sequences: &'a [Sequence]) -> Option<&'a Instruction> {
-        let sequence = &sequences[self.current_sequence];
-        let current_instruction = self.instruction_offsets[self.current_sequence];
+        if self.current_sequence < sequences.len() {
+            let sequence = &sequences[self.current_sequence];
+            let current_instruction = self.instruction_offsets[self.current_sequence];
 
-        sequence.get(current_instruction)
+            sequence.get(current_instruction)
+        } else {
+            None
+        }
     }
     
     pub fn advance(&mut self) {
@@ -147,7 +157,9 @@ impl State {
         }
 
         match start {
-            &Restart => self.instruction_offsets[self.current_sequence] = 0,
+            &Restart => {
+                self.instruction_offsets.get_mut(self.current_sequence).map(|v| *v = 0);
+            }
             &Continue => {}
         }
     }
@@ -180,15 +192,15 @@ impl State {
 
 
             &Equal => {
-                let top = self.stack.last().unwrap();
+                let top = self.pop();
                 let front = self.deque.front().unwrap();
-                (top == front) as DataType
+                (top == *front) as DataType
             }
 
             &Greater => {
-                let top = self.stack.last().unwrap();
+                let top = self.pop();
                 let front = self.deque.front().unwrap();
-                (top > front) as DataType
+                (top > *front) as DataType
             }
         }
     }

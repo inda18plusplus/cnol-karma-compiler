@@ -14,7 +14,11 @@ pub enum Error {
     IncompatibleEncoding(Utf8Error),
 
     /// An invalid command was found in the source code
-    InvalidCommand(char)
+    InvalidCommand(char),
+
+    /// A trailing skip in source code
+    /// Wraps the line
+    TrailingSkip(usize)
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

@@ -1,6 +1,8 @@
 
+KARMA_SOURCE = karma/fib.kar
+
 run: build
-	@cargo run karma/0.kar
+	@cargo run $(KARMA_SOURCE)
 
 build:
 	@clear

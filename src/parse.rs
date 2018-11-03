@@ -30,7 +30,10 @@ pub enum Instruction {
     SkipIfNotOne,
 
     /// Jump to another sequence
-    Jump(Direction, Start)
+    Jump(Direction, Start),
+
+    /// Exits the program
+    Exit
 }
 
 #[derive(Debug)]
@@ -53,10 +56,10 @@ pub enum ValueSource {
     /// Read char from stdin
     Input,
 
-    /// 1 if top of stack == front of deque, 0 otherwise
+    /// 1 if top of stack == front of deque, 0 otherwise. Pops the top of the stack.
     Equal,
 
-    /// 1 if top of stack > front of deque, 0 otherwise
+    /// 1 if top of stack > front of deque, 0 otherwise. Pops the top of the stack.
     Greater,
 }
 
@@ -117,19 +120,19 @@ use self::Start::*;
 pub fn interpret(source_code: &str) -> Result<Vec<Sequence>> {
     let mut sequences = Vec::new();
 
-    for sequence in source_code.lines().map(parse_line) {
-        let sequence = sequence?;
+    sequences.push(vec![Exit]);
 
-        if !sequence.is_empty() {
-            sequences.push(sequence)
-        }
+    for sequence in source_code.lines().enumerate().map(|(n, l)| parse_line(l, n + 1)) {
+        sequences.push(sequence?)
     }
+
+    sequences.push(vec![Exit]);
 
     Ok(sequences)
 }
 
 
-fn parse_line(line: &str) -> Result<Sequence> {
+fn parse_line(line: &str, line_number: usize) -> Result<Sequence> {
     let mut sequence = Vec::new();
 
     for character in line.chars() {
@@ -191,5 +194,11 @@ fn parse_line(line: &str) -> Result<Sequence> {
         sequence.push(instruction);
     }
 
+    match sequence.last() {
+        Some(SkipIfNotOne) => return Err(Error::TrailingSkip(line_number)),
+        _ => {}
+    }
+
+    sequence.push(Exit);
     Ok(sequence)
 }
