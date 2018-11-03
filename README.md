@@ -24,3 +24,12 @@ Some modifications had to be made in order to make compilation and authoring cod
 {1+\>[}]!@';#{{##
 ```
 
+**Sum of natural numbers**
+```
+0,
+68*?-,+55+*<
+\10-}>{#!@,}55+>[{]@',
+#[55+]/}0}0,
+{1+\>@,\}+<
+{##;
+```

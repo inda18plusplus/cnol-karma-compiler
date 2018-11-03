@@ -1,0 +1,21 @@
+, Comptues the sum of the first n integers
+, 
+,
+, === Reads n from stdin ===
+,
+0,                          The current sum
+68*?- , +55+*<              Read digit _ until invalid digit _ multiply sum by 10 and add digit
+\10-}>{#!@, }55+>[{]@',     Check if input > -1 _ and < 10
+#,                          Cleanup
+[55+]/,                     Divide sum by 10 to get the number
+,
+,
+, === Init conuter with n=input and i=1 ===
+}0},
+,
+, === Init sum ===
+0,
+,
+, === while n>=i === 
+{1+\>@, \}+<        Check if we have done all iterations
+{##;              

@@ -1,5 +1,5 @@
 
-KARMA_SOURCE = karma/fib.kar
+KARMA_SOURCE = karma/sum.kar
 
 run: build
 	@cargo run $(KARMA_SOURCE)
