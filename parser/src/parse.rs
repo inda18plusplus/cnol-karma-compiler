@@ -202,3 +202,4 @@ fn parse_line(line: &str, line_number: usize) -> Result<Sequence> {
     sequence.push(Exit);
     Ok(sequence)
 }
+

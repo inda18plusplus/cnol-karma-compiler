@@ -9,15 +9,13 @@ use std::{
     }
 };
 
-use error::*;
-use parse::*;
-
-use parse::Instruction::*;
-use parse::ValueSource::*;
-use parse::Operator::*;
-use parse::QueueEnd::*;
-use parse::Direction::*;
-use parse::Start::*;
+use karma_parser::*;
+use karma_parser::Instruction::*;
+use karma_parser::ValueSource::*;
+use karma_parser::Operator::*;
+use karma_parser::QueueEnd::*;
+use karma_parser::Direction::*;
+use karma_parser::Start::*;
 
 pub type DataType = i64;
 type Stack = Vec<DataType>;
@@ -35,7 +33,7 @@ struct State {
 
 
 
-pub fn execute(sequences: &[Sequence]) -> Result<()> {
+pub fn execute(sequences: &[Sequence]) {
     let mut state = State {
         stack: Stack::new(),
         deque: Deque::new(),
@@ -104,8 +102,6 @@ pub fn execute(sequences: &[Sequence]) -> Result<()> {
     println!("");
     println!("Final stack: {:?}", state.stack);
     println!("Final deque: {:?}", state.deque);
-
-    Ok(())
 }
 
 

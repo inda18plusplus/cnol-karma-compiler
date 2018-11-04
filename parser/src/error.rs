@@ -23,15 +23,3 @@ pub enum Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-
-
-#[inline]
-pub fn try_or_exit<T>(result: Result<T>) -> T {
-    match result {
-        Ok(t) => t,
-        Err(e) => {
-            println!("Error: {:?}", e);
-            std::process::exit(1);
-        }
-    }
-}
