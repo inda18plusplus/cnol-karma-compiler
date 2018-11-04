@@ -4,7 +4,10 @@ use llvm_sys::{
     prelude::*
 };
 
-use std::ffi::CString;
+use std::{
+    ffi::CString,
+    ptr
+};
 
 pub struct Builder {
     context: LLVMContextRef,
@@ -66,7 +69,12 @@ impl Builder {
     }
 
     /// Create a new function
-    pub unsafe fn add_function(&mut self, name: &str, return_type: LLVMTypeRef, argument_types: &mut[LLVMTypeRef]) -> LLVMValueRef {
+    pub unsafe fn add_function(&mut self, 
+                               name: &str, 
+                               return_type: LLVMTypeRef, 
+                               arguments: &[(&str, LLVMTypeRef)]) -> LLVMValueRef {
+        let argument_types: Vec<_> = arguments.iter().map(|arg| arg.1).collect();
+
         let function_type = llvm::LLVMFunctionType(
             return_type, 
             argument_types.as_ptr() as *mut _,
@@ -74,12 +82,31 @@ impl Builder {
             0
         );
 
-        llvm::LLVMAddFunction(
+        let function = llvm::LLVMAddFunction(
             self.module,
             self.create_str(name),
             function_type
-        )
+        );
+
+        // name the parameters
+        let params = vec![ptr::null::<LLVMValueRef>(); arguments.len()];
+        llvm::LLVMGetParams(function, params.as_ptr() as *mut _);
+        for (param, name) in params.into_iter().zip(arguments.iter().map(|arg| arg.0)) {
+            let name = self.create_str(name);
+            llvm::LLVMSetValueName(param as *mut _, name);
+        }
+
+        function
     }
+
+    
+    /// Get a parameter of a function
+    pub unsafe fn get_param(&mut self,
+                            function: LLVMValueRef,
+                            index: u32) -> LLVMValueRef {
+        llvm::LLVMGetParam(function, index)
+    }
+
 
     /// Create and append block to a function
     pub unsafe fn add_block(&mut self, function: LLVMValueRef, name: &str) -> LLVMBasicBlockRef {
@@ -128,21 +155,86 @@ impl<'a> BlockBuilder<'a> {
     pub unsafe fn call_function(&mut self, 
                                 function_name: &str, 
                                 arguments: &mut [LLVMValueRef], 
-                                name: &str) -> LLVMValueRef {
+                                output_name: &str) -> LLVMValueRef {
+        let output = self.parent.create_str(output_name);
+
         let function = self.parent.get_named_function(function_name);
-            
-        let name = self.parent.create_str(name);
         llvm::LLVMBuildCall(self.builder, 
                             function, 
                             arguments.as_ptr() as *mut _, 
                             arguments.len() as u32, 
-                            name
+                            output
         )
+    }
+
+
+    pub unsafe fn return_void(&mut self) -> LLVMValueRef {
+        llvm::LLVMBuildRetVoid(self.builder)
     }
 
     pub unsafe fn return_value(&mut self,
                          value: LLVMValueRef) -> LLVMValueRef {
         llvm::LLVMBuildRet(self.builder, value)
+    }
+
+
+    pub unsafe fn branch(&mut self,
+                         target: LLVMBasicBlockRef) -> LLVMValueRef {
+        llvm::LLVMBuildBr(self.builder, target)
+    }
+
+
+    pub unsafe fn load(&mut self,
+                           pointer_value: LLVMValueRef,
+                           output_name: &str) -> LLVMValueRef {
+        let output = self.parent.create_str(output_name);
+
+        llvm::LLVMBuildLoad(self.builder, pointer_value, output)
+    }
+
+    pub unsafe fn store(&mut self,
+                            value: LLVMValueRef,
+                            target: LLVMValueRef) -> LLVMValueRef {
+        llvm::LLVMBuildStore(self.builder, value, target)
+    }
+
+
+    pub unsafe fn get_element_offset(&mut self,
+                                     array: LLVMValueRef,
+                                     offset: LLVMValueRef,
+                                     output_name: &str) -> LLVMValueRef {
+        let output = self.parent.create_str(output_name);
+
+        llvm::LLVMBuildGEP(self.builder, array, [offset].as_mut_ptr(), 1, output)
+    }
+
+
+    pub unsafe fn add(&mut self,
+                      lhs: LLVMValueRef,
+                      rhs: LLVMValueRef,
+                      output_name: &str) -> LLVMValueRef {
+        let output = self.parent.create_str(output_name);
+
+        llvm::LLVMBuildAdd(self.builder, lhs, rhs, output)
+    }
+
+
+    pub unsafe fn cast_int(&mut self,
+                           value: LLVMValueRef,
+                           target: LLVMTypeRef,
+                           output_name: &str) -> LLVMValueRef {
+        let output = self.parent.create_str(output_name);
+
+        llvm::LLVMBuildIntCast(self.builder, value, target, output)
+    }
+
+    pub unsafe fn pointer_cast(&mut self,
+                               value: LLVMValueRef,
+                               target: LLVMTypeRef,
+                               output_name: &str) -> LLVMValueRef {
+        let output = self.parent.create_str(output_name);
+
+        llvm::LLVMBuildPointerCast(self.builder, value, target, output)
     }
 }
 
@@ -180,7 +272,6 @@ pub unsafe fn i8_ptr_type() -> LLVMTypeRef {
 pub unsafe fn i64_ptr_type() -> LLVMTypeRef {
     llvm::LLVMPointerType(i64_type(), 0)
 }
-
 
 
 pub unsafe fn i8_value(n: i8) -> LLVMValueRef {
