@@ -6,3 +6,5 @@ authors = ["Christofer Nolander <christofer.nolander@gmail.com>"]
 [dependencies]
 llvm-sys = "60"
 
+karma_parser = {path="../parser"}
+

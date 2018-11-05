@@ -70,16 +70,33 @@ impl Builder {
 
     /// Create a new function
     pub unsafe fn add_function(&mut self, 
+                           name: &str, 
+                           return_type: LLVMTypeRef, 
+                           arguments: &[(&str, LLVMTypeRef)]) -> LLVMValueRef {
+        self.add_function_raw(name, return_type, arguments, false)
+    }
+
+    /// Create a new function with variadic arguments
+    pub unsafe fn add_function_var_arg(&mut self, 
+                           name: &str, 
+                           return_type: LLVMTypeRef, 
+                           arguments: &[(&str, LLVMTypeRef)]) -> LLVMValueRef {
+        self.add_function_raw(name, return_type, arguments, true)
+    }
+
+    /// Create a new function
+    unsafe fn add_function_raw(&mut self, 
                                name: &str, 
                                return_type: LLVMTypeRef, 
-                               arguments: &[(&str, LLVMTypeRef)]) -> LLVMValueRef {
+                               arguments: &[(&str, LLVMTypeRef)],
+                               is_var_arg: bool) -> LLVMValueRef {
         let argument_types: Vec<_> = arguments.iter().map(|arg| arg.1).collect();
 
         let function_type = llvm::LLVMFunctionType(
             return_type, 
             argument_types.as_ptr() as *mut _,
             argument_types.len() as u32,
-            0
+            if is_var_arg {1} else {0}
         );
 
         let function = llvm::LLVMAddFunction(
@@ -125,6 +142,14 @@ impl Builder {
 
         build(block_builder)
     }
+
+
+    /// Add a constant string
+    pub unsafe fn constant_string(&mut self,
+                                  string: &str) -> LLVMValueRef {
+        let bytes: Vec<LLVMValueRef> = string.bytes().map(|b| i8_value(b as i8)).collect();
+        llvm::LLVMConstArray(i8_type(), bytes.as_ptr() as *mut _, bytes.len() as u32)
+    }
 }
 
 impl Drop for Builder {
@@ -154,7 +179,7 @@ impl<'a> BlockBuilder<'a> {
 
     pub unsafe fn call_function(&mut self, 
                                 function_name: &str, 
-                                arguments: &mut [LLVMValueRef], 
+                                arguments: &[LLVMValueRef], 
                                 output_name: &str) -> LLVMValueRef {
         let output = self.parent.create_str(output_name);
 
@@ -183,6 +208,16 @@ impl<'a> BlockBuilder<'a> {
         llvm::LLVMBuildBr(self.builder, target)
     }
 
+    pub unsafe fn switch(&mut self,
+                         condition: LLVMValueRef,
+                         cases: &[(LLVMValueRef, LLVMBasicBlockRef)],
+                         default: LLVMBasicBlockRef) {
+        let switch = llvm::LLVMBuildSwitch(self.builder, condition, default, cases.len() as u32);
+
+        for (val, destination) in cases.iter() {
+            llvm::LLVMAddCase(switch, *val, *destination);
+        }
+    }
 
     pub unsafe fn load(&mut self,
                            pointer_value: LLVMValueRef,
@@ -207,7 +242,6 @@ impl<'a> BlockBuilder<'a> {
 
         llvm::LLVMBuildGEP(self.builder, array, [offset].as_mut_ptr(), 1, output)
     }
-
 
     pub unsafe fn add(&mut self,
                       lhs: LLVMValueRef,

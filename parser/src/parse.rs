@@ -117,7 +117,7 @@ use self::Start::*;
 
 
 /// Parse the source code into multiple sequences of commands
-pub fn interpret(source_code: &str) -> Result<Vec<Sequence>> {
+pub fn parse_str(source_code: &str) -> Result<Vec<Sequence>> {
     let mut sequences = Vec::new();
 
     sequences.push(vec![Exit]);

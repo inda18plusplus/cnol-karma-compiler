@@ -1,23 +1,43 @@
 
+extern crate karma_parser;
 extern crate llvm_sys;
+
 use llvm_sys::prelude::*;
 
+use karma_parser::*;
+
+
+#[allow(dead_code)]
 mod builder;
 use builder::*;
 
+mod stack;
+use stack::Stack;
 
-const STACK_SIZE: usize = 10;
+use std::env;
+use std::process;
+
 
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+
+    let code = if args.len() > 1 {
+        parse_file(&args[1]).unwrap()
+    } else {
+        println!("Error: no file specified in arguments!");
+        process::exit(1);
+    };
+
     unsafe {
         let mut builder = Builder::new();
-        
+
         add_external_functions(&mut builder);
+        add_puti64(&mut builder);
 
         let stack = Stack::build(&mut builder);
 
-        create_main(&mut builder, &stack);
+        create_main(&mut builder, &stack, code);
 
         builder.print_module();
     }
@@ -26,132 +46,181 @@ fn main() {
 
 unsafe fn add_external_functions(builder: &mut Builder) {
     builder.add_function("malloc", i8_ptr_type(), &[("", i32_type())]);
-    builder.add_function("putchar", i32_type(), &[("", i32_type())]);
+    builder.add_function("getchar", i32_type(), &[]);
+    builder.add_function_var_arg("printf", i32_type(), &[("", i8_ptr_type())]);
 }
 
+unsafe fn add_puti64(builder: &mut Builder) {
+    let puti64 = builder.add_function("puti64", void_type(), &[("value", i64_type())]);
+    let format = builder.constant_string("%ld\0");
+    let format = builder.add_global_variable("format", format);
+    let value = builder.get_param(puti64, 0);
 
-unsafe fn create_main(builder: &mut Builder, stack: &Stack) {
+    let entry = builder.add_block(puti64, "entry");
+    builder.build_block(entry, |mut b| {
+        let format = b.pointer_cast(format, i8_ptr_type(), "");
+        b.call_function("printf", &[format, value], "");
+        b.return_void();
+    });
+}
+
+unsafe fn create_main(builder: &mut Builder, stack: &Stack, sequences: Vec<Sequence>) {
     let main = builder.add_function("main", i32_type(), &mut []);
     let init_stack = builder.add_block(main, "init_stack");
     let entry = builder.add_block(main, "entry");
+    let exit = builder.add_block(main, "exit");
 
     builder.build_block(init_stack, |mut b| {
         stack.build_constructor(&mut b, stack.data);
         b.branch(entry);
     });
 
+    let sequence_blocks = create_sequence_blocks(builder, main, exit, sequences);
+
     builder.build_block(entry, |mut b| {
-        b.call_function("push", &mut [i64_value(072)], "");
-        b.call_function("push", &mut [i64_value(101)], "");
+        b.store(i64_value(0), sequence_blocks[1].next_section);
+        b.branch(sequence_blocks[1].jump);
+    });
 
-        let e = b.call_function("pop", &mut [], "");
-        let h = b.call_function("pop", &mut [], "");
-
-        let e = b.cast_int(e, i32_type(), "");
-        let h = b.cast_int(h, i32_type(), "");
-
-        b.call_function("putchar", &mut [h], "");
-        b.call_function("putchar", &mut [e], "");
-        b.call_function("putchar", &mut [i32_value(108)], "");
-        b.call_function("putchar", &mut [i32_value(108)], "");
-        b.call_function("putchar", &mut [i32_value(111)], "");
-        b.call_function("putchar", &mut [i32_value(044)], "");
-        b.call_function("putchar", &mut [i32_value(032)], "");
-        b.call_function("putchar", &mut [i32_value(119)], "");
-        b.call_function("putchar", &mut [i32_value(111)], "");
-        b.call_function("putchar", &mut [i32_value(114)], "");
-        b.call_function("putchar", &mut [i32_value(108)], "");
-        b.call_function("putchar", &mut [i32_value(100)], "");
-        b.call_function("putchar", &mut [i32_value(033)], "");
-        b.call_function("putchar", &mut [i32_value(010)], "");
-        b.return_value(i32_value(0));
+    builder.build_block(exit, |mut b| {
+        b.return_value(i32_value(1));
     });
 }
 
 
-#[allow(dead_code)]
-struct Stack {
-    data: LLVMValueRef,
-    head: LLVMValueRef,
 
-    push: LLVMValueRef,
-    pop: LLVMValueRef
+unsafe fn create_sequence_blocks(builder: &mut Builder,
+                                 target_fn: LLVMValueRef,
+                                 exit_block: LLVMBasicBlockRef,
+                                 sequences: Vec<Sequence>) -> Vec<SequenceBlock> {
+    let mut sequence_blocks = Vec::new();
+
+    for (i, sequence) in sequences.iter().enumerate() {
+        let jump = builder.add_block(target_fn, &format!("jump_table_{}", i));
+        let next_section = builder.add_global_variable(&format!("next_section_{}", i), i64_value(0));
+        let sections = create_section_blocks(builder, target_fn, i, next_section, sequence);
+
+        builder.build_block(jump, |mut b| {
+            build_jump_table(&mut b, sections, exit_block, next_section);
+        });
+
+        sequence_blocks.push(SequenceBlock {
+            jump, next_section
+        });
+    }
+
+    sequence_blocks
 }
 
-impl Stack {
-    pub unsafe fn build(builder: &mut Builder) -> Stack {
-        let data = builder.add_global_variable("stack", i64_ptr_value());
-        let head = builder.add_global_variable("head", i64_value(-1));
-        let push = Stack::build_push(builder, data, head);
-        let pop = Stack::build_pop(builder, data, head);
 
-        Stack {
-            data,
-            head,
-            push,
-            pop
-        }
-    }
+struct SequenceBlock {
+    // the jump table into the sequence
+    jump: LLVMBasicBlockRef,
 
-    unsafe fn build_push(builder: &mut Builder, 
-                         data: LLVMValueRef, 
-                         head: LLVMValueRef) -> LLVMValueRef {
-        let push = builder.add_function("push", void_type(), &[("value", i64_type())]);
-        let value = builder.get_param(push, 0);
+    // i64*, the next block to execute in the sequence
+    next_section: LLVMValueRef
+}
 
-        let body = builder.add_block(push, "entry");
 
-        builder.build_block(body, |mut b| {
-            let b = &mut b;
-            let pos = Self::move_head(b, head, i64_value(1));
-            let data_ptr = b.load(data, "");
-            let ptr = b.get_element_offset(data_ptr, pos, "");
-            b.store(value, ptr);
+unsafe fn create_section_blocks(builder: &mut Builder,
+                                target_fn: LLVMValueRef,
+                                sequence_number: usize,
+                                next_section: LLVMValueRef,
+                                sequence: &Sequence) -> Vec<LLVMBasicBlockRef> {
+    let mut sections = Vec::new();
 
-            b.return_void();
+    let add_section = |builder: &mut Builder, sections: &mut Vec<_>| -> LLVMBasicBlockRef {
+        let section_number = sections.len();
+        let name = &format!("section_{}_{}", sequence_number, section_number);
+        let section = builder.add_block(target_fn, name);
+
+        builder.build_block(section, |mut b| {
+            b.store(i64_value(section_number as i64 + 1), next_section);
         });
 
-        push
+        sections.push(section);
+        section
+    };
+
+    let mut current_section = add_section(builder, &mut sections);
+
+    for instruction in sequence.iter() {
+        add_instruction(builder, current_section, instruction);
     }
 
-    unsafe fn build_pop(builder: &mut Builder, 
-                        data: LLVMValueRef, 
-                        head: LLVMValueRef) -> LLVMValueRef {
-        let pop = builder.add_function("pop", i64_type(), &[]);
-        let body = builder.add_block(pop, "entry");
+    sections
+}
 
-        builder.build_block(body, |mut b| {
-            let b = &mut b;
-            let pos = b.load(head, "");
-            let data_ptr = b.load(data, "");
-            let ptr = b.get_element_offset(data_ptr, pos, "");
-            let value = b.load(ptr, "");
-            
-            Self::move_head(b, head, i64_value(-1));
+unsafe fn add_instruction(builder: &mut Builder,
+                          section: LLVMBasicBlockRef,
+                          instruction: &Instruction) {
+    match instruction {
+        &Instruction::Push(ref source) => add_push(builder, section, source),
+        &Instruction::OutputCharacter(ref source) => add_output_character(builder, section, source),
+        &Instruction::OutputNumber(ref source) => add_output_number(builder, section, source),
 
-            b.return_value(value);
-        });
+        &Instruction::Exit => add_exit(builder, section),
 
-        pop
-    }
-
-
-    unsafe fn build_constructor(&self, b: &mut BlockBuilder, data: LLVMValueRef) {
-        let ptr = b.call_function("malloc", &mut[i32_value(STACK_SIZE as i32)], "");
-        let ptr = b.pointer_cast(ptr, i64_ptr_type(), "");
-        b.store(ptr, data);
-    }
-
-
-    /// Moves the head of the stack forward or backwards and returns it's position after the move
-    unsafe fn move_head(b: &mut BlockBuilder, head: LLVMValueRef, delta: LLVMValueRef) -> LLVMValueRef {
-        let old_head = b.load(head, "");
-        let new_head = b.add(old_head, delta, "");
-        b.store(new_head, head);
-        new_head
+        _ => unimplemented!("Instruction {:?}", instruction)
     }
 }
 
 
+unsafe fn add_push(builder: &mut Builder,
+                   section: LLVMBasicBlockRef,
+                   source: &ValueSource) {
+    builder.build_block(section, |mut b| {
+        let value = get_value_from_source(&mut b, source);
+        b.call_function("push", &[value], "");
+    })
+}
+
+unsafe fn add_output_character(builder: &mut Builder,
+                               section: LLVMBasicBlockRef,
+                               source: &ValueSource) {
+    builder.build_block(section, |mut b| {
+        let value = get_value_from_source(&mut b, source);
+        let value = b.cast_int(value, i32_type(), "");
+        b.call_function("putchar", &[value], "");
+    })
+}
+
+unsafe fn add_output_number(builder: &mut Builder,
+                            section: LLVMBasicBlockRef,
+                            source: &ValueSource) {
+    builder.build_block(section, |mut b| {
+        let value = get_value_from_source(&mut b, source);
+        b.call_function("puti64", &[value], "");
+    })
+}
+
+unsafe fn add_exit(builder: &mut Builder,
+                   section: LLVMBasicBlockRef) {
+    builder.build_block(section, |mut b| {
+        b.return_value(i32_value(0));
+    })
+}
 
 
+unsafe fn get_value_from_source(builder: &mut BlockBuilder,
+                                source: &ValueSource) -> LLVMValueRef {
+    match source {
+        &ValueSource::Digit(digit) => i64_value(digit as i64),
+        &ValueSource::Pop => builder.call_function("pop", &[], ""),
+
+        _ => unimplemented!()
+    }
+}
+
+
+unsafe fn build_jump_table(builder: &mut BlockBuilder,
+                           sections: Vec<LLVMBasicBlockRef>,
+                           exit: LLVMBasicBlockRef,
+                           next_section: LLVMValueRef) {
+    let next = builder.load(next_section, "");
+    let numbered_sections: Vec<_> = sections.into_iter().enumerate()
+        .map(|(i, section)| (i64_value(i as i64), section))
+        .collect();
+
+    builder.switch(next, &numbered_sections, exit);
+}

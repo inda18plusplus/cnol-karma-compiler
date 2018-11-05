@@ -16,7 +16,7 @@ use std::path::Path;
 pub fn parse_file<P: AsRef<Path>>(path: P) -> Result<Vec<parse::Sequence>> {
     let source = load_file_text(path)?;
 
-    interpret(&source)
+    parse_str(&source)
 }
 
 
