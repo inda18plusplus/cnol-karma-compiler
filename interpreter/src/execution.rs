@@ -6,7 +6,8 @@ use std::{
     io::{
         self,
         Read
-    }
+    },
+    slice
 };
 
 use karma_parser::*;
@@ -22,28 +23,27 @@ type Stack = Vec<DataType>;
 type Deque = VecDeque<DataType>;
 
 
-#[derive(Debug)]
-struct State {
-    pub stack: Stack,
-    pub deque: Deque,
-
-    pub current_sequence: usize,
-    pub instruction_offsets: Vec<usize>
-}
-
-
-
 pub fn execute(sequences: &[Sequence]) {
-    let mut state = State {
-        stack: Stack::new(),
-        deque: Deque::new(),
+    #[cfg(feature = "debug")]
+    eprintln!("Sequences: {:#?}", sequences);
 
-        current_sequence: 1,
-        instruction_offsets: vec![0; sequences.len()]
-    };
+    let mut state = State::new(sequences);
+    while let Some(instruction) = state.next_instruction() {
+        #[cfg(feature = "debug")]
+        {
+            let pad = |len, mut string: String| {
+                for _ in string.len()..len {
+                    string += " ";
+                }
 
-    while let Some(instruction) = state.get_instruction(sequences) {
-        state.advance();
+                string
+            };
+
+            let instr = pad(50, format!("{:?}", instruction));
+            let stack = pad(50, format!("{:?}", state.stack));
+
+            eprintln!("{} {} {:?}", instr, stack, state.deque);
+        }
 
         match instruction {
             &BitwiseNot => {
@@ -75,7 +75,7 @@ pub fn execute(sequences: &[Sequence]) {
             &SkipIfNotOne => {
                 let top = state.pop();
                 if top != 1 {
-                    state.advance();
+                    state.next_instruction();
                 }
             }
 
@@ -98,30 +98,66 @@ pub fn execute(sequences: &[Sequence]) {
         }
     }
 
-    println!("");
-    println!("");
-    println!("Final stack: {:?}", state.stack);
-    println!("Final deque: {:?}", state.deque);
+    #[cfg(feature = "debug")]
+    {
+        eprintln!("");
+        eprintln!("");
+        eprintln!("Final stack: {:?}", state.stack);
+        eprintln!("Final deque: {:?}", state.deque);
+    }
 }
 
 
+#[derive(Debug)]
+struct State<'a> {
+    stack: Stack,
+    deque: Deque,
 
-impl State {
-    pub fn get_instruction<'a>(&self, sequences: &'a [Sequence]) -> Option<&'a Instruction> {
-        if self.current_sequence < sequences.len() {
-            let sequence = &sequences[self.current_sequence];
-            let current_instruction = self.instruction_offsets[self.current_sequence];
+    current_sequence: usize,
+    next_sections: Vec<usize>,
+    current_section: slice::Iter<'a, Instruction>,
 
-            sequence.get(current_instruction)
-        } else {
-            None
+    sequences: &'a [Sequence]
+}
+
+impl<'a> State<'a> {
+    pub fn new(sequences: &'a[Sequence]) -> Self {
+        let current_section = sequences[1][0].iter();
+        let mut next_sections = vec![0; sequences.len()];
+        next_sections[1] = 1;
+
+        State {
+            stack: Stack::new(),
+            deque: Deque::new(),
+
+            current_sequence: 0,
+            next_sections,
+            current_section,
+
+            sequences
         }
     }
-    
-    pub fn advance(&mut self) {
-        self.instruction_offsets[self.current_sequence] += 1;
-    }
 
+
+    pub fn next_instruction(&mut self) -> Option<&'a Instruction> {
+        match self.current_section.next() {
+            instruction @ Some(_) => instruction,
+
+            // go to following section
+            None => {
+                let next_section = self.next_sections[self.current_sequence];
+                if next_section >= self.sequences[self.current_sequence].len() {
+                    None
+                } else {
+                    self.current_section =
+                        self.sequences[self.current_sequence][next_section].iter();
+
+                    self.next_sections[self.current_sequence] += 1;
+                    self.next_instruction()
+                }
+            }
+        }
+    }
 
     pub fn push(&mut self, value: DataType) {
         self.stack.push(value);
@@ -153,11 +189,13 @@ impl State {
         }
 
         match start {
-            &Restart => {
-                self.instruction_offsets.get_mut(self.current_sequence).map(|v| *v = 0);
-            }
+            &Restart => self.next_sections[self.current_sequence] = 0,
             &Continue => {}
         }
+
+        let next_section = &mut self.next_sections[self.current_sequence];
+        self.current_section = self.sequences[self.current_sequence][*next_section].iter();
+        *next_section += 1;
     }
 
     pub fn value_from_source(&mut self, source: &ValueSource) -> DataType {

@@ -16,8 +16,7 @@ pub enum Error {
     /// An invalid command was found in the source code
     InvalidCommand(char),
 
-    /// A trailing skip in source code
-    /// Wraps the line
+    /// A trailing skip on a specific line in source code
     TrailingSkip(usize)
 }
 

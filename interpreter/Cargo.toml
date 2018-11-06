@@ -9,3 +9,6 @@ karma_parser = {path = "../parser"}
 [features]
 benchmark = []
 
+# Prints each instruction executed to stderr
+debug = []
+

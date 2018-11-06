@@ -1,8 +1,11 @@
 
 KARMA_SOURCE = ../karma/sum.kar
 
-run: build
-	@cargo run $(KARMA_SOURCE)
+run:
+	@cargo run --release $(KARMA_SOURCE)
+
+debug:
+	@cargo run --release --features debug -- $(KARMA_SOURCE)
 
 bench: 
 	@echo "=== SUM ==="
