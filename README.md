@@ -9,7 +9,7 @@ Some modifications had to be made in order to make compilation and authoring cod
 
 ## Examples
 
-### Hello, world
+### Hello, world!
 ```
 98*:55+\*1+:96*\+\:\:3+:56+4*:48*:126*55+*-\:80-+\:3+\:60-+:55+\*:48*1+:
 ```
