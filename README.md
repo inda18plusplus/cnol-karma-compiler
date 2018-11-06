@@ -40,7 +40,6 @@ Some modifications had to be made in order to make compilation and authoring cod
 | Benchmark              | File            | Input       | Interpreter (seconds) | Compiler (seconds) |
 |------------------------|-----------------|-------------|-----------------------|--------------------|
 | Sum of natural numbers | `karma/sum.kar` | `123456789` | 12.4503               | -                  |
-|------------------------|-----------------|-------------|-----------------------|--------------------|
 
 
 
