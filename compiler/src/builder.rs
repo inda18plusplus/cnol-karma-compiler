@@ -59,21 +59,23 @@ impl Builder {
     }
 
     /// Add a global variable with standard value
-    pub unsafe fn add_global_variable(&mut self, name: &str, value: LLVMValueRef) -> LLVMValueRef {
+    pub fn add_global_variable(&mut self, name: &str, value: LLVMValueRef) -> LLVMValueRef {
+        unsafe {
         let kind = llvm::LLVMTypeOf(value);
 
         let variable = llvm::LLVMAddGlobal(self.module, kind, self.create_str(name));
         llvm::LLVMSetInitializer(variable, value);
 
         variable
+        }
     }
 
     /// Create a new function
-    pub unsafe fn add_function(&mut self, 
+    pub fn add_function(&mut self, 
                            name: &str, 
                            return_type: LLVMTypeRef, 
                            arguments: &[(&str, LLVMTypeRef)]) -> LLVMValueRef {
-        self.add_function_raw(name, return_type, arguments, false)
+        unsafe { self.add_function_raw(name, return_type, arguments, false) } 
     }
 
     /// Create a new function with variadic arguments
