@@ -42,3 +42,14 @@ Some modifications had to be made in order to make compilation and authoring cod
 | Sum of natural numbers | `karma/sum.kar` | `123456789` | 12.4503               | -                  |
 |------------------------|-----------------|-------------|-----------------------|--------------------|
 
+
+
+## TODO
+
+- [ ] Make all builder functions safe.
+- [ ] Jump directly from section to section.
+- [ ] Reference jump tables across sequences
+- [ ] Implement all instructions in the instruction builder.
+- [ ] Implement the double ended queue.
+- [ ] End world hunger.
+
