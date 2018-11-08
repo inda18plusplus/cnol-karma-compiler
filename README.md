@@ -46,9 +46,9 @@ Some modifications had to be made in order to make compilation and authoring cod
 ## TODO
 
 - [ ] Make all builder functions safe.
-- [ ] Jump directly from section to section.
-- [ ] Reference jump tables across sequences.
-- [ ] Implement all instructions in the instruction builder.
+- [X] Jump directly from section to section.
+- [X] Reference jump tables across sequences.
 - [ ] Implement the double ended queue.
+- [ ] Implement all instructions in the instruction builder.
 - [ ] End world hunger.
 

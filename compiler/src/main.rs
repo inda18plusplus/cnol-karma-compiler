@@ -2,8 +2,6 @@
 extern crate karma_parser;
 extern crate llvm_sys;
 
-use llvm_sys::prelude::*;
-
 use karma_parser::*;
 
 
@@ -30,28 +28,27 @@ fn main() {
         process::exit(1);
     };
 
-    unsafe {
-        let mut builder = Builder::new();
+    let mut builder = Builder::new();
 
-        add_external_functions(&mut builder);
-        add_puti64(&mut builder);
+    add_external_functions(&mut builder);
+    add_puti64(&mut builder);
 
-        let stack = Stack::build(&mut builder);
+    let stack = Stack::build(&mut builder);
 
-        create_main(&mut builder, &stack, code);
+    create_main(&mut builder, &stack, code);
 
-        builder.print_module();
-    }
+    builder.print_module();
 }
 
 
-unsafe fn add_external_functions(builder: &mut Builder) {
+fn add_external_functions(builder: &mut Builder) {
     builder.add_function("malloc", i8_ptr_type(), &[("", i32_type())]);
     builder.add_function("getchar", i32_type(), &[]);
+    builder.add_function("putchar", i32_type(), &[("", i32_type())]);
     builder.add_function_var_arg("printf", i32_type(), &[("", i8_ptr_type())]);
 }
 
-unsafe fn add_puti64(builder: &mut Builder) {
+fn add_puti64(builder: &mut Builder) {
     let puti64 = builder.add_function("puti64", void_type(), &[("value", i64_type())]);
     let format = builder.constant_string("%ld\0");
     let format = builder.add_global_variable("format", format);
@@ -59,13 +56,13 @@ unsafe fn add_puti64(builder: &mut Builder) {
 
     let entry = builder.add_block(puti64, "entry");
     builder.build_block(entry, |mut b| {
-        let format = b.pointer_cast(format, i8_ptr_type(), "");
-        b.call_function("printf", &[format, value], "");
+        let format = b.pointer_cast(format, i8_ptr_type());
+        b.call_function("printf", &[format, value]);
         b.return_void();
     });
 }
 
-unsafe fn create_main(builder: &mut Builder, stack: &Stack, sequences: Vec<Sequence>) {
+fn create_main(builder: &mut Builder, stack: &Stack, sequences: Vec<Sequence>) {
     let main = builder.add_function("main", i32_type(), &mut []);
     let init_stack = builder.add_block(main, "init_stack");
     let entry = builder.add_block(main, "entry");
@@ -73,7 +70,7 @@ unsafe fn create_main(builder: &mut Builder, stack: &Stack, sequences: Vec<Seque
     let panic = builder.add_block(main, "panic");
 
     builder.build_block(init_stack, |mut b| {
-        stack.build_constructor(&mut b, stack.data);
+        stack.build_constructor(&mut b);
         b.branch(entry);
     });
 
@@ -81,8 +78,8 @@ unsafe fn create_main(builder: &mut Builder, stack: &Stack, sequences: Vec<Seque
         .build(&sequences);
 
     builder.build_block(entry, |mut b| {
-        b.store(i64_value(0), sequence_blocks[1].next_section);
-        b.branch(sequence_blocks[1].jump_table);
+        b.store(i64_value(0), sequence_blocks[1].jump_table.next_section);
+        b.branch(sequence_blocks[1].jump_table.block);
     });
 
     builder.build_block(exit, |mut b| {
