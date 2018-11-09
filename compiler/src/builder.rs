@@ -262,7 +262,7 @@ impl<'a> BlockBuilder<'a> {
         unsafe { llvm::LLVMBuildMul(self.builder, lhs, rhs, self.empty_str()) }
     }
     pub fn div(&mut self, lhs: LLVMValueRef, rhs: LLVMValueRef) -> LLVMValueRef {
-        unsafe { llvm::LLVMBuildMul(self.builder, lhs, rhs, self.empty_str()) }
+        unsafe { llvm::LLVMBuildSDiv(self.builder, lhs, rhs, self.empty_str()) }
     }
     pub fn modulo(&mut self, lhs: LLVMValueRef, rhs: LLVMValueRef) -> LLVMValueRef {
         unsafe { llvm::LLVMBuildSRem(self.builder, lhs, rhs, self.empty_str()) }
