@@ -48,7 +48,8 @@ Some modifications had to be made in order to make compilation and authoring cod
 - [ ] Make all builder functions safe.
 - [X] Jump directly from section to section.
 - [X] Reference jump tables across sequences.
-- [ ] Implement the double ended queue.
-- [ ] Implement all instructions in the instruction builder.
+- [X] Implement the double ended queue.
+- [X] Implement all instructions in the instruction builder.
+- [ ] Implement dynamic stack and deque
 - [ ] End world hunger.
 

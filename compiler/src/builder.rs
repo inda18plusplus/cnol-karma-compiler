@@ -180,7 +180,7 @@ pub struct BlockBuilder<'a> {
 
 
 pub enum Compare {
-    Eq,
+    Equal,
     Greater
 }
 
@@ -262,7 +262,7 @@ impl<'a> BlockBuilder<'a> {
         unsafe { llvm::LLVMBuildMul(self.builder, lhs, rhs, self.empty_str()) }
     }
     pub fn div(&mut self, lhs: LLVMValueRef, rhs: LLVMValueRef) -> LLVMValueRef {
-        unsafe { llvm::LLVMBuildMul(self.builder, lhs, rhs, self.empty_str()) }
+        unsafe { llvm::LLVMBuildSDiv(self.builder, lhs, rhs, self.empty_str()) }
     }
     pub fn modulo(&mut self, lhs: LLVMValueRef, rhs: LLVMValueRef) -> LLVMValueRef {
         unsafe { llvm::LLVMBuildSRem(self.builder, lhs, rhs, self.empty_str()) }
@@ -286,7 +286,7 @@ impl<'a> BlockBuilder<'a> {
                    comparison: Compare,
                    rhs: LLVMValueRef) -> LLVMValueRef {
         let op = match comparison {
-            Compare::Eq => llvm_sys::LLVMIntPredicate::LLVMIntEQ,
+            Compare::Equal => llvm_sys::LLVMIntPredicate::LLVMIntEQ,
             Compare::Greater => llvm_sys::LLVMIntPredicate::LLVMIntSGT,
         };
 

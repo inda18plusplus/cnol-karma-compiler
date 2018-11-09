@@ -1,6 +1,7 @@
 
 
 run:
+	@clear
 	@mkdir -p out
 	@cargo run ../karma/simple.kar > out/out.ll
 	@llc -filetype=obj out/out.ll
