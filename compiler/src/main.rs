@@ -12,6 +12,9 @@ use builder::*;
 mod stack;
 use stack::Stack;
 
+mod deque;
+use deque::Deque;
+
 use std::env;
 use std::process;
 
@@ -34,8 +37,9 @@ fn main() {
     add_puti64(&mut builder);
 
     let stack = Stack::build(&mut builder);
+    let deque = Deque::build(&mut builder);
 
-    create_main(&mut builder, &stack, code);
+    create_main(&mut builder, &stack, &deque, code);
 
     builder.print_module();
 }
@@ -62,15 +66,23 @@ fn add_puti64(builder: &mut Builder) {
     });
 }
 
-fn create_main(builder: &mut Builder, stack: &Stack, sequences: Vec<Sequence>) {
+fn create_main(builder: &mut Builder, stack: &Stack, deque: &Deque, sequences: Vec<Sequence>) {
     let main = builder.add_function("main", i32_type(), &mut []);
+
     let init_stack = builder.add_block(main, "init_stack");
+    let init_deque = builder.add_block(main, "init_deque");
+
     let entry = builder.add_block(main, "entry");
     let exit = builder.add_block(main, "exit");
     let panic = builder.add_block(main, "panic");
 
     builder.build_block(init_stack, |mut b| {
         stack.build_constructor(&mut b);
+        b.branch(init_deque);
+    });
+    
+    builder.build_block(init_deque, |mut b| {
+        deque.build_constructor(&mut b);
         b.branch(entry);
     });
 

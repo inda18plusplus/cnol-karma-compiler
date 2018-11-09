@@ -2,7 +2,7 @@
 use llvm_sys::prelude::*;
 use builder::*;
 
-const STACK_SIZE: usize = 10;
+const STACK_SIZE: usize = 100;
 
 #[allow(dead_code)]
 pub struct Stack {

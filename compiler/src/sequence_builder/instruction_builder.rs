@@ -56,6 +56,8 @@ impl<'a> InstructionBuilder<'a> {
     fn build_instruction(&mut self, instruction: &Instruction) {
         match instruction {
             &Instruction::Push(ref source) => self.build_push(source),
+            &Instruction::Insert(ref source, ref end) => self.build_insert(source, end),
+
             &Instruction::OutputCharacter(ref source) => self.build_output_character(source),
             &Instruction::OutputNumber(ref source) => self.build_output_number(source),
 
@@ -68,8 +70,6 @@ impl<'a> InstructionBuilder<'a> {
             &Instruction::Jump(ref direction, ref start) => self.build_jump(direction, start),
 
             &Instruction::Exit => self.build_exit(),
-
-            _ => unimplemented!("Instruction {:?}", instruction)
         }
     }
 
@@ -77,6 +77,15 @@ impl<'a> InstructionBuilder<'a> {
         let value = self.get_value_from_source(source);
         self.builder.call_function("push", &[value]);
     }
+
+    fn build_insert(&mut self, source: &ValueSource, end: &QueueEnd) {
+        let value = self.get_value_from_source(source);
+        match end {
+            &QueueEnd::Front => self.builder.call_function("insert_front", &[value]),
+            &QueueEnd::Back => self.builder.call_function("insert_back", &[value]),
+        };
+    }
+
 
     // TODO: remove unneccessary pop/push
     fn build_destroy(&mut self) {
@@ -96,29 +105,26 @@ impl<'a> InstructionBuilder<'a> {
     }
 
 
-    // TODO: remove unneccessary pop/push
     fn build_bitwise_not(&mut self) {
         let value = self.builder.call_function("pop", &[]);
         let value = self.builder.bit_not(value);
         self.builder.call_function("push", &[value]);
     }
 
-    // TODO: remove unneccessary pop/push
     fn build_logical_not(&mut self) {
         let value = self.builder.call_function("pop", &[]);
         let zero = i64_value(0);
-        let boolean_value = self.builder.compare(value, Compare::Eq, zero);
+        let boolean_value = self.builder.compare(value, Compare::Equal, zero);
         let value = self.builder.zero_extend_int(boolean_value, i64_type());
         self.builder.call_function("push", &[value]);
     }
 
 
-    // TODO: remove unneccessary pop/push
     fn build_skip(&mut self) {
         let value = self.builder.call_function("pop", &[]);
 
         let one = i64_value(1);
-        let boolean_value = self.builder.compare(value, Compare::Eq, one);
+        let boolean_value = self.builder.compare(value, Compare::Equal, one);
 
         let zero = i1_value(false);
         let one = i1_value(true);
@@ -165,6 +171,13 @@ impl<'a> InstructionBuilder<'a> {
             &ValueSource::Digit(digit) => i64_value(digit as i64),
             &ValueSource::Pop => self.builder.call_function("pop", &[]),
 
+            &ValueSource::Remove(QueueEnd::Front) => {
+                self.builder.call_function("remove_front", &[])
+            }
+            &ValueSource::Remove(QueueEnd::Back) => {
+                self.builder.call_function("remove_back", &[])
+            }
+
             &ValueSource::Operate(ref lhs, ref operation, ref rhs) => {
                 let lhs_value = self.get_value_from_source(lhs);
                 let rhs_value = self.get_value_from_source(rhs);
@@ -183,7 +196,20 @@ impl<'a> InstructionBuilder<'a> {
                 self.builder.cast_int(value, i64_type())
             }
 
-            _ => unimplemented!("Value Source: {:?}", source)
+            &ValueSource::Equal => {
+                let top = self.get_value_from_source(&ValueSource::Pop);
+                let front = self.get_value_from_source(&ValueSource::Remove(QueueEnd::Front));
+                let comparison = self.builder.compare(top, Compare::Equal, front); 
+                self.builder.call_function("insert_front", &[front]);
+                self.builder.zero_extend_int(comparison, i64_type())
+            }
+            &ValueSource::Greater => {
+                let top = self.get_value_from_source(&ValueSource::Pop);
+                let front = self.get_value_from_source(&ValueSource::Remove(QueueEnd::Front));
+                let comparison = self.builder.compare(top, Compare::Greater, front); 
+                self.builder.call_function("insert_front", &[front]);
+                self.builder.zero_extend_int(comparison, i64_type())
+            }
         }
     }
 

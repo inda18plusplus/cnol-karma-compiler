@@ -180,7 +180,7 @@ pub struct BlockBuilder<'a> {
 
 
 pub enum Compare {
-    Eq,
+    Equal,
     Greater
 }
 
@@ -286,7 +286,7 @@ impl<'a> BlockBuilder<'a> {
                    comparison: Compare,
                    rhs: LLVMValueRef) -> LLVMValueRef {
         let op = match comparison {
-            Compare::Eq => llvm_sys::LLVMIntPredicate::LLVMIntEQ,
+            Compare::Equal => llvm_sys::LLVMIntPredicate::LLVMIntEQ,
             Compare::Greater => llvm_sys::LLVMIntPredicate::LLVMIntSGT,
         };
 
