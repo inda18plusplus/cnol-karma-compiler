@@ -72,7 +72,10 @@ impl Stack {
 
 
     pub fn build_constructor(&self, b: &mut BlockBuilder) {
-        let ptr = b.call_function("malloc", &mut[i32_value(STACK_SIZE as i32)]);
+        use std::mem::size_of;
+        let stack_size = STACK_SIZE as i32 * size_of::<i64>() as i32;
+
+        let ptr = b.call_function("malloc", &mut[i32_value(stack_size)]);
         let ptr = b.pointer_cast(ptr, i64_ptr_type());
         b.store(ptr, self.data);
     }
