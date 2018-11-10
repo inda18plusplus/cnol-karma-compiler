@@ -41,12 +41,30 @@ fn main() {
 
     create_main(&mut builder, &stack, &deque, code);
 
-    builder.print_module();
+
+    if builder.is_working() {
+        builder.print_module();
+    } else {
+        process::exit(1);
+    }
 }
 
 
 fn add_external_functions(builder: &mut Builder) {
     builder.add_function("malloc", i8_ptr_type(), &[("", i32_type())]);
+
+    builder.add_function(
+        "memcpy", 
+        void_type(), 
+        &[
+            ("", i8_ptr_type()),
+            ("", i8_ptr_type()),
+            ("", i64_type())
+        ]
+    );
+
+    builder.add_function("exit", void_type(), &[("", i32_type())]);
+
     builder.add_function("getchar", i32_type(), &[]);
     builder.add_function("putchar", i32_type(), &[("", i32_type())]);
     builder.add_function_var_arg("printf", i32_type(), &[("", i8_ptr_type())]);

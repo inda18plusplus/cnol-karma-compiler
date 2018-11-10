@@ -44,6 +44,19 @@ impl Builder {
     }
 
 
+    pub fn is_working(&self) -> bool {
+        use llvm_sys::analysis::*;
+        unsafe {
+            LLVMVerifyModule(
+                self.module,
+                LLVMVerifierFailureAction::LLVMPrintMessageAction,
+                ptr::null_mut()
+            ) == 0
+        }
+    }
+
+
+
 
     /// Create a new C compatible string from an ASCII string
     pub fn create_str_mut(&mut self, string: &str) -> *mut i8 {
@@ -181,7 +194,8 @@ pub struct BlockBuilder<'a> {
 
 pub enum Compare {
     Equal,
-    Greater
+    Greater,
+    GreaterOrEqual,
 }
 
 
@@ -198,6 +212,17 @@ impl<'a> BlockBuilder<'a> {
         self.parent.create_str("")
     }
 
+
+    pub fn call(&mut self, function: LLVMValueRef, arguments: &[LLVMValueRef]) -> LLVMValueRef {
+        unsafe { 
+            llvm::LLVMBuildCall(self.builder, 
+                                function, 
+                                arguments.as_ptr() as *mut _, 
+                                arguments.len() as u32, 
+                                self.empty_str()
+            ) 
+        }
+    }
 
     pub fn call_function(&mut self, function_name: &str, arguments: &[LLVMValueRef]) -> LLVMValueRef {
         let function = self.parent.get_named_function(function_name);
@@ -223,6 +248,13 @@ impl<'a> BlockBuilder<'a> {
 
     pub fn branch(&mut self, target: LLVMBasicBlockRef) -> LLVMValueRef {
         unsafe { llvm::LLVMBuildBr(self.builder, target) }
+    }
+    
+    pub fn conditional_branch(&mut self, 
+                              condition: LLVMValueRef,  
+                              on_true: LLVMBasicBlockRef,
+                              on_false: LLVMBasicBlockRef) -> LLVMValueRef {
+        unsafe { llvm::LLVMBuildCondBr(self.builder, condition, on_true, on_false) }
     }
 
     pub fn switch(&mut self,
@@ -288,6 +320,7 @@ impl<'a> BlockBuilder<'a> {
         let op = match comparison {
             Compare::Equal => llvm_sys::LLVMIntPredicate::LLVMIntEQ,
             Compare::Greater => llvm_sys::LLVMIntPredicate::LLVMIntSGT,
+            Compare::GreaterOrEqual => llvm_sys::LLVMIntPredicate::LLVMIntSGE,
         };
 
         unsafe { llvm::LLVMBuildICmp(self.builder, op, lhs, rhs, self.empty_str()) }
@@ -331,6 +364,8 @@ pub fn i32_type() -> LLVMTypeRef { unsafe { llvm::LLVMInt32Type() } }
 pub fn i64_type() -> LLVMTypeRef { unsafe { llvm::LLVMInt64Type() } }
 
 
+pub fn void_ptr_type() -> LLVMTypeRef { unsafe { llvm::LLVMPointerType(void_type(), 0) } }
+
 pub fn i8_ptr_type() -> LLVMTypeRef { unsafe { llvm::LLVMPointerType(i8_type(), 0) } }
 
 pub fn i64_ptr_type() -> LLVMTypeRef { unsafe { llvm::LLVMPointerType(i64_type(), 0) } }
@@ -345,3 +380,6 @@ pub fn i32_value(n: i32) -> LLVMValueRef { unsafe { llvm::LLVMConstInt(i32_type(
 pub fn i64_value(n: i64) -> LLVMValueRef { unsafe { llvm::LLVMConstInt(i64_type(), n as u64, 1) } }
 
 pub fn i64_ptr_value() -> LLVMValueRef { unsafe { llvm::LLVMConstPointerNull(i64_ptr_type()) } }
+
+
+
