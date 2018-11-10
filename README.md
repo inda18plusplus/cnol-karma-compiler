@@ -5,6 +5,7 @@ Based on description provided by [Esolang, the esoteric programming languages wi
 Some modifications had to be made in order to make compilation and authoring code easier:
 - Anything after a non-command character will be ignored. Blank lines still terminate execution.
 - Spaces and tabs will be ignored within statements.
+- Use a 64-bit integer instead of 8-bit byte as standard data type.
 
 
 ## Examples
@@ -39,7 +40,7 @@ Some modifications had to be made in order to make compilation and authoring cod
 
 | Benchmark              | File            | Input       | Interpreter (seconds) | Compiler (seconds) |
 |------------------------|-----------------|-------------|-----------------------|--------------------|
-| Sum of natural numbers | `karma/sum.kar` | `123456789` | 12.4503               | -                  |
+| Sum of natural numbers | `karma/sum.kar` | `123456789` | 12.4503               | 6.10               |
 
 
 
@@ -50,6 +51,8 @@ Some modifications had to be made in order to make compilation and authoring cod
 - [X] Reference jump tables across sequences.
 - [X] Implement the double ended queue.
 - [X] Implement all instructions in the instruction builder.
-- [x] Implement dynamic stack and deque
+- [X] Implement dynamic stack and deque
+- [ ] Build benchmark tool
+- [ ] Write code to benchmark
 - [ ] End world hunger.
 
