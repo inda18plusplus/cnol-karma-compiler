@@ -39,8 +39,8 @@ pub fn execute(sequences: &[Sequence]) {
                 string
             };
 
-            let instr = pad(50, format!("{:?}", instruction));
-            let stack = pad(50, format!("{:?}", state.stack));
+            let instr = pad(30, format!("{:?}", instruction));
+            let stack = pad(30, format!("{:?}", state.stack));
 
             eprintln!("{} {} {:?}", instr, stack, state.deque);
         }
@@ -130,7 +130,7 @@ impl<'a> State<'a> {
             stack: Stack::new(),
             deque: Deque::new(),
 
-            current_sequence: 0,
+            current_sequence: 1,
             next_sections,
             current_section,
 
@@ -207,7 +207,7 @@ impl<'a> State<'a> {
             }
 
             
-            &Digit(ref value) => *value as DataType,
+            &Constant(ref value) => *value as DataType,
 
             &Operate(ref lhs, ref operator, ref rhs) => {
                 let lhs_value = self.value_from_source(lhs);

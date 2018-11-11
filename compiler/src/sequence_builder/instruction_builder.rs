@@ -168,7 +168,7 @@ impl<'a> InstructionBuilder<'a> {
 
     fn get_value_from_source(&mut self, source: &ValueSource) -> LLVMValueRef {
         match source {
-            &ValueSource::Digit(digit) => i64_value(digit as i64),
+            &ValueSource::Constant(digit) => i64_value(digit as i64),
             &ValueSource::Pop => self.builder.call_function("pop", &[]),
 
             &ValueSource::Remove(QueueEnd::Front) => {

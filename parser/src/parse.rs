@@ -3,7 +3,7 @@ use error::*;
 use std;
 
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Instruction {
     /// Bitwise NOT top of stack
     BitwiseNot,
@@ -37,10 +37,10 @@ pub enum Instruction {
     Exit
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum ValueSource {
-    /// A constant digit
-    Digit(u8),
+    /// A constant value
+    Constant(i64),
 
     /// Pop a value from the stack
     Pop,
@@ -65,7 +65,7 @@ pub enum ValueSource {
 }
 
 /// Logical and mathematical operations between values
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Operator {
     Add,
     Sub,
@@ -84,20 +84,20 @@ pub enum Operator {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum QueueEnd {
     Front,
     Back
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Direction {
     Current,
     Previous,
     Next
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Start {
     /// Execute sequence from the beginning
     Restart,
@@ -143,8 +143,8 @@ impl Instruction {
 
             // Stack/Deque
             digit if digit.is_digit(10) => {
-                let value = digit.to_digit(10).unwrap() as u8;
-                Ok(Push(Digit(value)))
+                let value = digit.to_digit(10).unwrap() as i64;
+                Ok(Push(Constant(value)))
             },
 
             '}' => Ok(Insert(Pop, Front)),
@@ -262,19 +262,3 @@ fn parse_line(characters: &mut impl Iterator<Item=char>, line_number: usize) -> 
     Ok(sequence)
 }
 
-
-#[cfg(test)]
-mod tests {
-
-    use super::*;
-    #[test]
-    fn simple() {
-        let src = "1@@;";
-
-
-        println!("");
-        println!("{:#?}", parse_str(src));
-        println!("");
-        panic!();
-    }
-}

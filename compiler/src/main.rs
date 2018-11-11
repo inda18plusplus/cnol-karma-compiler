@@ -25,7 +25,8 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     let code = if args.len() > 1 {
-        parse_file(&args[1]).unwrap()
+        let code = parse_file(&args[1]).unwrap();
+        optimize::all(code)
     } else {
         println!("Error: no file specified in arguments!");
         process::exit(1);

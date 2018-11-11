@@ -12,7 +12,10 @@ use std::{
 use std::time;
 
 
-use karma_parser::parse_file;
+use karma_parser::{
+    parse_file,
+    optimize
+};
 
 mod execution;
 use execution::execute;
@@ -25,6 +28,7 @@ fn main() {
 
     let path = try_or_exit(get_path_argument());
     let sequences = try_or_exit(parse_file(path));
+    let sequences = optimize::all(sequences);
     execute(&sequences);
 
     #[cfg(feature = "benchmark")]
