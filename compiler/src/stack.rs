@@ -4,7 +4,7 @@ use builder::*;
 
 use std::mem::size_of;
 
-const INITIAL_SIZE: i64 = 1;
+const INITIAL_SIZE: i64 = 16;
 
 #[allow(dead_code)]
 pub struct Stack {
@@ -81,6 +81,8 @@ impl Stack {
                                     old_size_bytes,
                                 ]);
 
+            block.call_function("free", &[data]);
+            
             let ptr = block.pointer_cast(ptr, i64_ptr_type());
             block.store(ptr, self.data);
 

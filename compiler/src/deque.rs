@@ -4,7 +4,7 @@ use llvm_sys::prelude::*;
 use builder::*;
 use std::mem::size_of;
 
-const INITIAL_CAPACITY: i64 = 1;
+const INITIAL_CAPACITY: i64 = 16;
 
 /// A double ended queue with a cyclic buffer
 /// ```
@@ -186,6 +186,11 @@ impl Deque {
         });
 
         builder.build_block(exit, |mut block| {
+            let data = block.load(self.data);
+            let data = block.pointer_cast(data, i8_ptr_type());
+
+            block.call_function("free", &[data]);
+
             let ptr = block.pointer_cast(new_ptr.unwrap(), i64_ptr_type());
             block.store(ptr, self.data);
 

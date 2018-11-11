@@ -52,6 +52,7 @@ fn main() {
 
 fn add_external_functions(builder: &mut Builder) {
     builder.add_function("malloc", i8_ptr_type(), &[("", i32_type())]);
+    builder.add_function("free", void_type(), &[("", i8_ptr_type())]);
 
     builder.add_function(
         "memcpy", 
