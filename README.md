@@ -66,9 +66,9 @@ following snippet:
     12+
 ```
 The LLVM IR optimizer is not aware that `push`ing and then `pop`ing technically
-does not affect state in any way. In it's current form the Karma parser has an
+does not affect state in any way. That's why the Karma parser has an
 optional optimization pass which reduces the simplest case in the form `12+` 
-directly to `3`.
+directly to `3`. This is not perfect, but should help in most cases.
 
 
 ## Future optimizations
