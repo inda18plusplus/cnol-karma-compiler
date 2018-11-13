@@ -44,7 +44,8 @@ fn main() {
 
 
     if builder.is_working() {
-        builder.print_module();
+        let ir = builder.as_string();
+        println!("{}", ir);
     } else {
         process::exit(1);
     }

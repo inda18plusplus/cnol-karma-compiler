@@ -33,14 +33,13 @@ impl Builder {
 
 
     /// Dump generated IR to stdout
-    pub fn print_module(&self) {
+    pub fn as_string(&self) -> String {
         let cstring = unsafe {
             let c_str = llvm::LLVMPrintModuleToString(self.module);
             CString::from_raw(c_str)
         };
 
-        let string = cstring.into_string().unwrap();
-        println!("{}", string);
+        cstring.into_string().unwrap()
     }
 
 

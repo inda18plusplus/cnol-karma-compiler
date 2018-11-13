@@ -3,6 +3,11 @@ name = "karma_interpreter"
 version = "0.1.0"
 authors = ["Christofer Nolander <christofer.nolander@gmail.com>"]
 
+
+[[bin]]
+name = "karmai"
+path = "src/main.rs"
+
 [dependencies]
 karma_parser = {path = "../parser"}
 

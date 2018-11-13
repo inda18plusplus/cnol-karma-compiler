@@ -38,9 +38,11 @@ Some modifications had to be made in order to make compilation and authoring cod
 
 ## Benchmarks
 
-| Benchmark              | File            | Input       | Interpreter (seconds) | Compiler (seconds) |
-|------------------------|-----------------|-------------|-----------------------|--------------------|
-| Sum of natural numbers | `karma/sum.kar` | `123456789` | 12.4503               | 6.10               |
+Benchmarks were run using `bench/bench_interpreter.sh` and `bench/bench_compiler.sh`.
+
+| Benchmark                | File              | Input         | Interpreter (seconds)  | Compiler (seconds) |
+| ------------------------ | ----------------- | ------------- | ---------------------- | -------------      |
+| Sum of natural numbers   | `karma/sum.kar`   | `123456789`   | 13.683850786           | 5.650353131        |
 
 
 
@@ -52,7 +54,7 @@ Some modifications had to be made in order to make compilation and authoring cod
 - [X] Implement the double ended queue.
 - [X] Implement all instructions in the instruction builder.
 - [X] Implement dynamic stack and deque
-- [ ] Build benchmark tool
+- [X] Build benchmark tool
 - [ ] Write code to benchmark
 - [ ] End world hunger.
 

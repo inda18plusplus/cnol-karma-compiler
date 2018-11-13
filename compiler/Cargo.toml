@@ -3,6 +3,10 @@ name = "karma_compiler"
 version = "0.1.0"
 authors = ["Christofer Nolander <christofer.nolander@gmail.com>"]
 
+[[bin]]
+name = "karmac"
+path = "src/main.rs"
+
 [dependencies]
 llvm-sys = "60"
 
