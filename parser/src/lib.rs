@@ -30,6 +30,7 @@ mod tests {
         ValueSource::*,
         Direction::*,
         Start::*,
+        QueueEnd::*
     };
 
     #[test]
@@ -43,6 +44,23 @@ mod tests {
                 vec![vec![Exit]],
 
                 vec![vec![Push(Constant(999)), Exit]],
+
+                vec![vec![Exit]],
+            ]
+        );
+    }
+
+    #[test]
+    fn optimize_insert() {
+        let sequences = parse_str("77+}").unwrap();
+        let sequences = optimize::compute_constants(sequences);
+
+        assert_eq!(
+            sequences,
+            vec![
+                vec![vec![Exit]],
+
+                vec![vec![Insert(Constant(14), Front), Exit]],
 
                 vec![vec![Exit]],
             ]

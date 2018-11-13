@@ -45,6 +45,45 @@ Benchmarks were run using `bench/bench_interpreter.sh` and `bench/bench_compiler
 | Sum of natural numbers   | `karma/sum.kar`   | `123456789`   | 13.683850786           | 5.650353131        |
 
 
+## Current optimizations
+
+Both the interpreter and compiler are really dumb. They push, pop, remove and
+insert values all the time, even though most of them could be avoided. For
+example, in the following snippet we push the number 7 to the stack, pop it and
+insert it to the front of the deque: 
+```
+    7}
+```
+In this simple example the compiler has to perform 3 function calls (`push`,
+`pop` and `insert_front`). It is possible to remove the `push` and `pop`
+altogether and just insert the number 7 straight away.
+
+The compiler does not handle constant expressions very well either. The Karma
+specification states that every intermediate in a computation should be
+pushed to the stack. As a result we end up with 3 `push`es and 2 `pop`s in the
+following snippet:
+```
+    12+
+```
+The LLVM IR optimizer is not aware that `push`ing and then `pop`ing technically
+does not affect state in any way. In it's current form the Karma parser has an
+optional optimization pass which reduces the simplest case in the form `12+` 
+directly to `3`.
+
+
+## Future optimizations
+
+In theory it is possible to track all constant values as they travel through the
+source tree and remove even more `push` and `pop` calls. Currently the following
+snippet will not be reduced any further:
+```
+    5}?{1+
+```
+while it could be reduced to the following:
+```
+    ?6
+```
+
 
 ## TODO
 
