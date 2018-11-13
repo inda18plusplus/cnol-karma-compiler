@@ -2,10 +2,10 @@
 
 Based on description provided by [Esolang, the esoteric programming languages wiki](https://esolangs.org/wiki/Karma).
 
-Some modifications had to be made in order to make compilation and authoring code easier:
+Some modifications were made in order to make compilation and authoring code easier:
 - Anything after a non-command character will be ignored. Blank lines still terminate execution.
 - Spaces and tabs will be ignored within statements.
-- Use a 64-bit integer instead of 8-bit byte as standard data type.
+- Use a 64-bit integer instead of an 8-bit byte as standard data type.
 
 
 ## Examples
@@ -38,7 +38,7 @@ Some modifications had to be made in order to make compilation and authoring cod
 
 ## Benchmarks
 
-Benchmarks were run using `bench/bench_interpreter.sh` and `bench/bench_compiler.sh`.
+Benchmarks were run using `bench/bench_interpreter.sh` and `bench/bench_compiler.sh` for the interpreter and compiler, respectively.
 
 | Benchmark                | File              | Input         | Interpreter (seconds)  | Compiler (seconds) |
 | ------------------------ | ----------------- | ------------- | ---------------------- | -------------      |
