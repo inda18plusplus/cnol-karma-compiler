@@ -3,11 +3,7 @@ use parse::{
     *,
     Instruction::*,
     ValueSource::*,
-    Direction::*,
-    Start::*,
 };
-
-use std::collections::VecDeque;
 
 
 /// Apply all optimizations to the sequence
