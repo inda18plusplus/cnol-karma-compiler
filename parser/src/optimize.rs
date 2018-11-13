@@ -61,6 +61,32 @@ fn compute_constants_section(section: Section) -> Section {
                 }
             }
 
+            OutputNumber(Pop) => {
+                match instructions.pop() {
+                    Some(Push(Constant(value))) => {
+                        instructions.push(OutputNumber(Constant(value)));
+                    }
+
+                    push => {
+                        if let Some(push) = push { instructions.push(push); }
+                        instructions.push(instruction);
+                    }
+                }
+            }
+
+            OutputCharacter(Pop) => {
+                match instructions.pop() {
+                    Some(Push(Constant(value))) => {
+                        instructions.push(OutputCharacter(Constant(value)));
+                    }
+
+                    push => {
+                        if let Some(push) = push { instructions.push(push); }
+                        instructions.push(instruction);
+                    }
+                }
+            }
+
             _ => instructions.push(instruction)
         }
     }
